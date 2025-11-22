@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { useData } from '@/hooks';
 import { deviceService } from '@/features/devices/services';
 import { sensorService } from '@/features/dashboard/services';
-import { TemperatureChart, HumidityChart, StatCard, DeviceCard } from '@/features/dashboard/components';
-import { Thermometer, Droplets, Gauge, Power, Activity } from 'lucide-react';
+import { websocketClient } from '@/lib/websocket-client';
+import { TemperatureChart, HumidityChart, LightChart, StatCard, DeviceCard } from '@/features/dashboard/components';
+import { Thermometer, Droplets, Sun, Power, Activity } from 'lucide-react';
 import type { Device, SensorData } from '@/types';
 import '@/styles/dashboard.scss';
 
@@ -34,8 +35,34 @@ export default function Home() {
   useEffect(() => {
     if (selectedDeviceId) {
       sensorService.getSensorData(selectedDeviceId, 20).then(setSensorData);
+      
+      // Subscribe to device via WebSocket
+      websocketClient.subscribeToDevice(selectedDeviceId);
+      
+      // Subscribe to WebSocket for real-time sensor updates
+      const unsubscribeSensor = websocketClient.subscribe('sensor-data', (message: any) => {
+        if (message.deviceId === selectedDeviceId) {
+          // Refresh sensor data when update received
+          sensorService.getSensorData(selectedDeviceId, 20).then(setSensorData);
+        }
+      });
+
+      // Get device dataInterval for polling
+      const selectedDevice = (devices as Device[]).find((d: Device) => d.deviceId === selectedDeviceId);
+      const pollInterval = selectedDevice?.dataInterval || 10000; // Default 10 seconds if not found
+
+      // Auto-refresh sensor data based on device's dataInterval
+      const interval = setInterval(() => {
+        sensorService.getSensorData(selectedDeviceId, 20).then(setSensorData);
+      }, pollInterval);
+
+      return () => {
+        websocketClient.unsubscribeFromDevice(selectedDeviceId);
+        unsubscribeSensor();
+        clearInterval(interval);
+      };
     }
-  }, [selectedDeviceId]);
+  }, [selectedDeviceId, devices]);
 
   const selectedDevice =
     devices && (devices as Device[]).length > 0
@@ -94,13 +121,13 @@ export default function Home() {
                 stats && stats.avgHumidity ? (latestSensor.humidity! > stats.avgHumidity ? 'up' : 'down') : undefined
               }
             />
-            {latestSensor.pressure && (
+            {latestSensor.light !== undefined && latestSensor.light !== null && (
               <StatCard
-                icon={Gauge}
-                title="Pressure"
-                value={latestSensor.pressure?.toFixed(0) || 'N/A'}
-                unit="hPa"
-                color="green"
+                icon={Sun}
+                title="Light Intensity"
+                value={latestSensor.light?.toFixed(1) || 'N/A'}
+                unit="lux"
+                color="yellow"
               />
             )}
             <StatCard
@@ -122,6 +149,9 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
               <TemperatureChart data={sensorData} />
               <HumidityChart data={sensorData} />
+              {sensorData.some((d) => d.light !== undefined && d.light !== null) && (
+                <LightChart data={sensorData} />
+              )}
             </div>
           </div>
         )}
@@ -138,7 +168,7 @@ export default function Home() {
                 <span>Timestamp</span>
                 <span>Temperature</span>
                 <span>Humidity</span>
-                <span>Pressure</span>
+                <span>Light</span>
                 <span>Status</span>
               </div>
               <div className="table-rows">
@@ -148,7 +178,7 @@ export default function Home() {
                       <span>{new Date(reading.timestamp).toLocaleString()}</span>
                       <span>{reading.temperature?.toFixed(1) || 'N/A'}°C</span>
                       <span>{reading.humidity?.toFixed(1) || 'N/A'}%</span>
-                      <span>{reading.pressure?.toFixed(0) || 'N/A'} hPa</span>
+                      <span>{reading.light?.toFixed(1) || 'N/A'} lux</span>
                       <span>✅ Recorded</span>
                     </div>
                   ))

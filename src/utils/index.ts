@@ -19,11 +19,11 @@ export function formatHumidity(humidity: number | undefined): string {
 }
 
 /**
- * Format pressure value with unit
+ * Format light intensity value with unit
  */
-export function formatPressure(pressure: number | undefined): string {
-  if (pressure === undefined || pressure === null) return 'N/A';
-  return `${pressure.toFixed(2)} hPa`;
+export function formatLight(light: number | undefined): string {
+  if (light === undefined || light === null) return 'N/A';
+  return `${light.toFixed(1)} lux`;
 }
 
 /**

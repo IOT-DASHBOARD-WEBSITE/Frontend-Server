@@ -39,10 +39,10 @@ export const SENSOR_THRESHOLDS = {
     max: 100,
     warning: 80,
   },
-  pressure: {
-    min: 900,
-    max: 1100,
-    warning: 1020,
+  light: {
+    min: 0,
+    max: 1000,
+    warning: 800,
   },
 };
 

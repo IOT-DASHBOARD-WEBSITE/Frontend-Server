@@ -9,7 +9,7 @@ interface StatCardProps {
   title: string;
   value: string | number;
   unit?: string;
-  color?: 'blue' | 'orange' | 'green' | 'red';
+  color?: 'blue' | 'orange' | 'green' | 'red' | 'yellow';
   trend?: 'up' | 'down' | 'stable';
 }
 
@@ -45,19 +45,19 @@ interface DeviceCardProps {
 }
 
 export const DeviceCard: React.FC<DeviceCardProps> = ({ device, isSelected, onClick }) => {
-  const statusColor = device.status === 'online' ? '#4caf50' : '#f44336';
-  const statusText = device.status === 'online' ? 'Online' : 'Offline';
+  const statusColor = device.isOnline ? '#4caf50' : '#f44336';
+  const statusText = device.isOnline ? 'Online' : 'Offline';
 
   return (
     <div className={`device-card ${isSelected ? 'selected' : ''}`} onClick={onClick}>
       <div className="device-header">
-        <div className="device-name">{device.deviceId}</div>
+        <div className="device-name">{device.name || device.deviceId}</div>
         <div className="device-status" style={{ backgroundColor: statusColor }}>
           {statusText}
         </div>
       </div>
       <div className="device-info">
-        <small>{device.location || 'No location'}</small>
+        <small>{device.description || device.deviceId}</small>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useDeviceContext } from '@/shared/contexts/DeviceContext';
 import { deviceService } from '@/features/devices/services';
-import { Edit2, X, Check } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import type { Device } from '@/types';
 import '@/styles/devices.scss';
 
@@ -47,10 +47,8 @@ export default function DevicesPage() {
 
     try {
       if (editingId) {
-        // Update device
+        // Update device - only WiFi and interval allowed
         await deviceService.updateDevice(editingId, {
-          name: formData.name,
-          description: formData.description,
           wifiSSID: formData.wifiSSID,
           wifiPassword: formData.wifiPassword,
           dataInterval: formData.dataInterval ? parseInt(formData.dataInterval) * 1000 : undefined,
@@ -124,32 +122,30 @@ export default function DevicesPage() {
           </div>
         )}
 
-        {/* Controls */}
-        <div className="devices-controls">
+        {/* Controls - Devices are auto-created from Adafruit, no manual creation needed */}
+        {/* <div className="devices-controls">
           <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
             {showForm ? 'Cancel' : '+ Add Device'}
           </button>
-        </div>
+        </div> */}
 
-        {/* Device Form */}
-        {showForm && (
+        {/* Device Form - Only for editing WiFi and interval */}
+        {showForm && editingId && (
           <div className={`device-form show`}>
             <form onSubmit={handleSubmit}>
               <h3 style={{ marginBottom: '24px', color: '#1f2937' }}>
-                {editingId ? 'Edit Device' : 'Add New Device'}
+                Configure Device Settings
               </h3>
               
               <div className="form-grid">
+                {/* Read-only device info */}
                 <div className="form-group">
-                  <label>Device ID {!editingId && '*'}</label>
+                  <label>Device ID</label>
                   <input
                     type="text"
-                    name="deviceId"
                     value={formData.deviceId}
-                    onChange={handleInputChange}
-                    placeholder="e.g., esp32-001"
-                    disabled={!!editingId}
-                    required={!editingId}
+                    disabled
+                    style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   />
                 </div>
 
@@ -157,14 +153,13 @@ export default function DevicesPage() {
                   <label>Device Name</label>
                   <input
                     type="text"
-                    name="name"
                     value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="e.g., Kitchen Sensor"
-                    required
+                    disabled
+                    style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   />
                 </div>
 
+                {/* Editable fields */}
                 <div className="form-group">
                   <label>WiFi SSID</label>
                   <input
@@ -194,7 +189,7 @@ export default function DevicesPage() {
                     name="dataInterval"
                     value={formData.dataInterval}
                     onChange={handleInputChange}
-                    placeholder="e.g., 5"
+                    placeholder="e.g., 15"
                     min="1"
                     step="1"
                     required
@@ -203,19 +198,18 @@ export default function DevicesPage() {
 
                 <div className="form-group">
                   <label>Description</label>
-                  <textarea
-                    name="description"
+                  <input
+                    type="text"
                     value={formData.description}
-                    onChange={handleInputChange}
-                    placeholder="Device description..."
-                    rows={3}
+                    disabled
+                    style={{ backgroundColor: '#f3f4f6', cursor: 'not-allowed' }}
                   />
                 </div>
               </div>
 
               <div className="form-actions">
                 <button type="submit" className="submit" disabled={loading}>
-                  {loading ? (editingId ? 'Updating...' : 'Adding...') : (editingId ? 'Update' : 'Add Device')}
+                  {loading ? 'Updating...' : 'Update Settings'}
                 </button>
                 <button type="button" className="cancel" onClick={resetForm}>
                   Cancel
@@ -258,25 +252,17 @@ export default function DevicesPage() {
                     onClick={() => handleEdit(device)}
                   >
                     <Edit2 size={16} />
-                    Edit
+                    Configure WiFi & Interval
                   </button>
-                  <button
-                    className="delete"
-                    onClick={() => device.id && handleDelete(device.id)}
-                  >
-                    Delete
-                  </button>
+                  {/* Devices are auto-created from Adafruit, deletion not recommended */}
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="empty-state">
-            <h3>No devices registered yet</h3>
-            <p>Click &quot;Add Device&quot; to register your first IoT device</p>
-            <button className="btn-primary" onClick={() => { resetForm(); setShowForm(true); }}>
-              Add Your First Device
-            </button>
+            <h3>No devices found</h3>
+            <p>Devices are automatically created when data is received from Adafruit IO</p>
           </div>
         )}
       </div>

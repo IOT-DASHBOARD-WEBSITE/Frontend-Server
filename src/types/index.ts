@@ -23,7 +23,6 @@ export interface SensorData {
   deviceId: string;
   temperature?: number;
   humidity?: number;
-  pressure?: number;
   light?: number;
   timestamp: string;
   createdAt: string;

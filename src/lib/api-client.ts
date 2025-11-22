@@ -23,25 +23,54 @@ class ApiClient {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     try {
+      console.log(`🌐 API Request: ${url}`);
       const response = await fetch(url, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true', // Skip ngrok browser warning page
           ...options.headers,
         },
         signal: controller.signal,
       });
+      
+      console.log(`📡 API Response: ${response.status} ${response.statusText} for ${url}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type') || '';
+      const isJson = contentType.includes('application/json');
 
-      // For 204 No Content responses, return null instead of trying to parse JSON
+      // For 204 No Content responses, return null
       if (response.status === 204) {
         return null as any;
       }
 
-      return await response.json();
+      // Read response as text first (can only read once)
+      const responseText = await response.text();
+
+      // Check if response is JSON
+      if (!isJson) {
+        console.error(`❌ Expected JSON but got ${contentType}. URL: ${url}`);
+        console.error(`Response: ${responseText.substring(0, 200)}...`);
+        throw new Error(`Expected JSON but got ${contentType}. Status: ${response.status}`);
+      }
+
+      // Check if response is OK
+      if (!response.ok) {
+        console.error(`❌ HTTP error! status: ${response.status}, URL: ${url}`);
+        console.error(`Response: ${responseText.substring(0, 200)}...`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Parse JSON
+      try {
+        const json = JSON.parse(responseText);
+        return json;
+      } catch (parseError) {
+        console.error(`❌ Failed to parse JSON. URL: ${url}`);
+        console.error(`Response: ${responseText.substring(0, 200)}...`);
+        throw new Error(`Invalid JSON response. Status: ${response.status}`);
+      }
     } finally {
       clearTimeout(timeoutId);
     }
